@@ -7,14 +7,16 @@ except ModuleNotFoundError as exc:
 
 import base64
 from datetime import date, datetime
+import requests
+from werkzeug.utils import secure_filename
 
+API_BASE = "http://127.0.0.1:8000"
 
 app = Flask(__name__)
 app.secret_key = "clave-secreta-cambiar-en-produccion"
 
 USUARIO_VALIDO = "admin"
 CLAVE_VALIDA = "1234"
-REGISTROS = []
 CAMPANAS = {
     "Scotiabank": ["Prestamos", "Tarjetas"],
     "Movistar": ["Portabilidad", "Movistar Total"],
@@ -28,45 +30,63 @@ TIPOS_IMAGEN_PERMITIDOS = {
 
 def calcular_antiguedad(fecha_ingreso):
     hoy = date.today()
-
     anios = hoy.year - fecha_ingreso.year
     meses = hoy.month - fecha_ingreso.month
     dias = hoy.day - fecha_ingreso.day
-
     if dias < 0:
         meses -= 1
         mes_anterior = hoy.month - 1 or 12
         anio_mes_anterior = hoy.year if hoy.month > 1 else hoy.year - 1
         dias_en_mes_anterior = (
-            date(anio_mes_anterior, mes_anterior % 12 + 1, 1) - date(anio_mes_anterior, mes_anterior, 1)
+            date(anio_mes_anterior, mes_anterior % 12 + 1, 1)
+            - date(anio_mes_anterior, mes_anterior, 1)
         ).days
         dias += dias_en_mes_anterior
-
     if meses < 0:
         anios -= 1
         meses += 12
-
     partes = []
-
     if anios:
         partes.append(f"{anios} año{'s' if anios != 1 else ''}")
     if meses:
         partes.append(f"{meses} mes{'es' if meses != 1 else ''}")
     if dias or not partes:
         partes.append(f"{dias} día{'s' if dias != 1 else ''}")
-
     return ", ".join(partes)
+
+
+def obtener_registros():
+    try:
+        resp = requests.get(f"{API_BASE}/api/asesores/registros/", timeout=5)
+        resp.raise_for_status()
+        data = resp.json()
+        registros = []
+        for r in data:
+            ingreso = datetime.strptime(r['fecha_ingreso'], "%Y-%m-%d").date()
+            nacimiento = datetime.strptime(r['fecha_nacimiento'], "%Y-%m-%d").date()
+            registros.append({
+                'nombres': r['nombres'],
+                'apellidos': r['apellidos'],
+                'fecha_nacimiento': nacimiento.strftime("%d/%m/%Y"),
+                'fecha_ingreso': ingreso.strftime("%d/%m/%Y"),
+                'antiguedad': calcular_antiguedad(ingreso),
+                'campana': r['cliente'],
+                'subcampana': r['campana'],
+                'foto_perfil': r['foto_perfil'] if r['foto_perfil'] else '',
+            })
+        return registros
+    except Exception as e:
+        print(f"Error al obtener registros: {e}")
+        return []
 
 
 @app.route("/", methods=["GET", "POST"])
 def login():
     mensaje = ""
     tipo_mensaje = ""
-
     if request.method == "POST":
         usuario = request.form.get("usuario", "").strip()
         clave = request.form.get("clave", "").strip()
-
         if not usuario or not clave:
             mensaje = "Completa el usuario y la contraseña."
             tipo_mensaje = "error"
@@ -76,7 +96,6 @@ def login():
         else:
             mensaje = "Usuario o contraseña incorrectos."
             tipo_mensaje = "error"
-
     return render_template("login.html", mensaje=mensaje, tipo_mensaje=tipo_mensaje)
 
 
@@ -129,47 +148,51 @@ def bienvenida():
                     mensaje = "La fecha de ingreso no puede ser futura."
                     tipo_mensaje = "error"
                 else:
-                    contenido_foto = foto.read()
-
-                    if not contenido_foto:
-                        mensaje = "No se pudo leer la foto seleccionada."
-                        tipo_mensaje = "error"
-                    else:
-                        foto_base64 = base64.b64encode(contenido_foto).decode("utf-8")
-                        foto_data_url = f"data:{foto.mimetype};base64,{foto_base64}"
-
-                        REGISTROS.append(
-                            {
-                                "nombres": nombres,
-                                "apellidos": apellidos,
-                                "fecha_nacimiento": nacimiento.strftime("%d/%m/%Y"),
-                                "fecha_ingreso": ingreso.strftime("%d/%m/%Y"),
-                                "antiguedad": calcular_antiguedad(ingreso),
-                                "campana": campana,
-                                "subcampana": subcampana,
-                                "foto_perfil": foto_data_url,
-                            }
+                    data = {
+                        'nombres': nombres,
+                        'apellidos': apellidos,
+                        'fecha_nacimiento': fecha_nacimiento,
+                        'fecha_ingreso': fecha_ingreso,
+                        'cliente': campana,
+                        'campana': subcampana,
+                    }
+                    files = {
+                        'foto_perfil': (secure_filename(foto.filename), foto.read(), foto.mimetype)
+                    }
+                    try:
+                        resp = requests.post(
+                            f"{API_BASE}/api/asesores/registros/",
+                            data=data,
+                            files=files,
+                            timeout=10
                         )
-                        mensaje = "Registro guardado correctamente."
-                        tipo_mensaje = "success"
-                        vista = "empleados"
+                        if resp.status_code == 201:
+                            mensaje = "Registro guardado correctamente."
+                            tipo_mensaje = "success"
+                            vista = "empleados"
+                        else:
+                            mensaje = f"Error al guardar en BD."
+                            tipo_mensaje = "error"
+                    except requests.exceptions.ConnectionError:
+                        mensaje = "No se pudo conectar al servidor de base de datos."
+                        tipo_mensaje = "error"
 
     if cliente_filtro and cliente_filtro not in CAMPANAS:
         cliente_filtro = ""
-
     if cliente_filtro and campana_filtro not in CAMPANAS.get(cliente_filtro, []):
         campana_filtro = ""
 
-    registros_filtrados = REGISTROS
+    registros = obtener_registros()
 
+    registros_filtrados = registros
     if vista == "empleados":
         if cliente_filtro:
             registros_filtrados = [
-                registro for registro in registros_filtrados if registro["campana"] == cliente_filtro
+                r for r in registros_filtrados if r["campana"] == cliente_filtro
             ]
         if campana_filtro:
             registros_filtrados = [
-                registro for registro in registros_filtrados if registro["subcampana"] == campana_filtro
+                r for r in registros_filtrados if r["subcampana"] == campana_filtro
             ]
 
     return render_template(
@@ -177,7 +200,7 @@ def bienvenida():
         usuario=usuario,
         autenticado=True,
         registros=registros_filtrados,
-        total_registros=registros_filtrados if vista == "empleados" else REGISTROS,
+        total_registros=registros_filtrados if vista == "empleados" else registros,
         mensaje=mensaje,
         tipo_mensaje=tipo_mensaje,
         vista=vista,

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Registros</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="page">
+        <section class="card">
+            <div class="dashboard-header">
+                <div class="dashboard-topbar">
+                    <button type="button" class="menu-toggle" id="menuToggle" aria-expanded="false" aria-controls="dashboardMenu">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                    <div class="brand">
+                        <span class="brand-tag">SALESLAND</span>
+                    </div>
+                </div>
+                <div class="header-copy">
+                    <span>Gestiona registros y consulta empleados</span>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <aside class="sidebar-panel" id="dashboardMenu">
+                    <div class="sidebar-top">
+                        <div class="sidebar-brand">
+                            <span class="sidebar-pill">Menu</span>
+                            <h2>Panel</h2>
+                        </div>
+                    </div>
+
+                    <nav class="sidebar-nav">
+                        <a
+                            href="{{ url_for('bienvenida', vista='nuevo-registro') }}"
+                            class="nav-link {% if vista == 'nuevo-registro' %}active{% endif %}"
+                        >
+                            Nuevo registro
+                        </a>
+                        <a
+                            href="{{ url_for('bienvenida', vista='empleados') }}"
+                            class="nav-link {% if vista == 'empleados' %}active{% endif %}"
+                        >
+                            Empleados
+                        </a>
+                    </nav>
+
+                    <div class="sidebar-footer">
+                        <div class="sidebar-user">
+                            <strong>{{ usuario }}</strong>
+                            <span>Administrador</span>
+                        </div>
+                        <a class="logout-link" href="{{ url_for('logout') }}">Cerrar sesión</a>
+                    </div>
+                </aside>
+
+                <section class="dashboard-panel content-panel">
+                    {% if vista == 'empleados' %}
+                    <div class="section-head">
+                        <h2>Empleados registrados</h2>
+                        <span>{{ registros|length }} total</span>
+                    </div>
+
+                    <form method="get" class="filter-form">
+                        <input type="hidden" name="vista" value="empleados">
+
+                        <div class="filter-field">
+                            <label for="cliente_filtro">Cliente</label>
+                            <select
+                                id="cliente_filtro"
+                                name="cliente"
+                                data-suboptions='{{ campanas|tojson }}'
+                                data-target="campana_filtro"
+                            >
+                                <option value="">Todos los clientes</option>
+                                {% for campana in campanas.keys() %}
+                                <option value="{{ campana }}" {% if cliente_filtro == campana %}selected{% endif %}>{{ campana }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="filter-field">
+                            <label for="campana_filtro">Campaña</label>
+                            <select
+                                id="campana_filtro"
+                                name="campania"
+                                data-selected="{{ campana_filtro }}"
+                                {% if not cliente_filtro %}disabled{% endif %}
+                            >
+                                <option value="">{% if cliente_filtro %}Todas las campañas{% else %}Primero selecciona un cliente{% endif %}</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-actions">
+                            <button type="submit" class="filter-btn">Filtrar</button>
+                            <a href="{{ url_for('bienvenida', vista='empleados') }}" class="clear-filter-btn">Limpiar</a>
+                        </div>
+                    </form>
+
+                    {% if mensaje %}
+                    <div class="message {{ tipo_mensaje }}">{{ mensaje }}</div>
+                    {% endif %}
+
+                    {% if registros %}
+                    <div class="record-list">
+                        {% for registro in registros %}
+                        <article class="record-card">
+                            <div class="record-header">
+                                <img
+                                    class="record-avatar"
+                                    src="{{ registro.foto_perfil }}"
+                                    alt="Foto de perfil de {{ registro.nombres }} {{ registro.apellidos }}"
+                                >
+                                <div>
+                                    <h3>{{ registro.nombres }} {{ registro.apellidos }}</h3>
+                                    <p>Antigüedad en la empresa: {{ registro.antiguedad }}</p>
+                                </div>
+                            </div>
+                            <span>Cliente: {{ registro.campana }}</span>
+                            <span>Campaña: {{ registro.subcampana }}</span>
+                            <span>Fecha de nacimiento: {{ registro.fecha_nacimiento }}</span>
+                            <span>Fecha de ingreso: {{ registro.fecha_ingreso }}</span>
+                        </article>
+                        {% endfor %}
+                    </div>
+                    <div class="report-action">
+                        <button type="button" class="report-btn">Reporte</button>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <p>Todavía no hay empleados registrados. Ve a "Nuevo registro" para agregar uno.</p>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="section-head">
+                        <h2>Nuevo registro</h2>
+                        <span>Formulario</span>
+                    </div>
+
+                    <form method="post" class="login-form" enctype="multipart/form-data">
+                        <input type="hidden" name="vista" value="nuevo-registro">
+
+                        <label for="foto_perfil">Foto de perfil</label>
+                        <div class="upload-box">
+                            <input type="file" id="foto_perfil" name="foto_perfil" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                            <small>Sube una imagen JPG, PNG o WEBP.</small>
+                        </div>
+
+                        <label for="nombres">Nombres</label>
+                        <input type="text" id="nombres" name="nombres" placeholder="Escribe los nombres">
+
+                        <label for="apellidos">Apellidos</label>
+                        <input type="text" id="apellidos" name="apellidos" placeholder="Escribe los apellidos">
+
+                        <label for="fecha_nacimiento">Fecha de nacimiento</label>
+                        <input type="date" id="fecha_nacimiento" name="fecha_nacimiento">
+
+                        <label for="fecha_ingreso">Fecha de ingreso</label>
+                        <input type="date" id="fecha_ingreso" name="fecha_ingreso">
+
+                        <label for="campana">Cliente</label>
+                        <select
+                            id="campana"
+                            name="campana"
+                            data-suboptions='{{ campanas|tojson }}'
+                            data-target="subcampana"
+                        >
+                            <option value="">Selecciona un cliente</option>
+                            {% for campana in campanas.keys() %}
+                            <option value="{{ campana }}">{{ campana }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <label for="subcampana">Campaña</label>
+                        <select id="subcampana" name="subcampana" disabled>
+                            <option value="">Primero selecciona un cliente</option>
+                        </select>
+
+                        {% if mensaje %}
+                        <div class="message {{ tipo_mensaje }}">{{ mensaje }}</div>
+                        {% endif %}
+
+                        <button type="submit" class="primary-btn">Guardar registro</button>
+                    </form>
+                    {% endif %}
+                </section>
+            </div>
+        </section>
+    </main>
+    <script>
+        const menuToggle = document.getElementById("menuToggle");
+        const dashboardMenu = document.getElementById("dashboardMenu");
+        const dashboardCard = document.querySelector(".card");
+
+        if (menuToggle && dashboardMenu && dashboardCard) {
+            menuToggle.addEventListener("click", () => {
+                const abierto = dashboardMenu.classList.toggle("open");
+                dashboardCard.classList.toggle("menu-open", abierto);
+                menuToggle.setAttribute("aria-expanded", abierto ? "true" : "false");
+            });
+        }
+
+        document.querySelectorAll("select[data-suboptions]").forEach((clienteSelect) => {
+            const targetId = clienteSelect.dataset.target;
+            const campaniaSelect = document.getElementById(targetId);
+
+            if (!campaniaSelect) {
+                return;
+            }
+
+            const opciones = JSON.parse(clienteSelect.dataset.suboptions || "{}");
+
+            const cargarSubopciones = () => {
+                const cliente = clienteSelect.value;
+                const items = opciones[cliente] || [];
+                const seleccionado = campaniaSelect.dataset.selected || "";
+
+                campaniaSelect.innerHTML = "";
+
+                if (!items.length) {
+                    const option = document.createElement("option");
+                    option.value = "";
+                    option.textContent = targetId === "campana_filtro" ? "Primero selecciona un cliente" : "Primero selecciona un cliente";
+                    campaniaSelect.appendChild(option);
+                    campaniaSelect.disabled = true;
+                    return;
+                }
+
+                const placeholder = document.createElement("option");
+                placeholder.value = "";
+                placeholder.textContent = targetId === "campana_filtro" ? "Todas las campañas" : "Selecciona una opción";
+                campaniaSelect.appendChild(placeholder);
+
+                items.forEach((item) => {
+                    const option = document.createElement("option");
+                    option.value = item;
+                    option.textContent = item;
+                    if (item === seleccionado) {
+                        option.selected = true;
+                    }
+                    campaniaSelect.appendChild(option);
+                });
+
+                if (!items.includes(seleccionado)) {
+                    campaniaSelect.value = "";
+                }
+
+                campaniaSelect.disabled = false;
+            };
+
+            clienteSelect.addEventListener("change", () => {
+                campaniaSelect.dataset.selected = "";
+                cargarSubopciones();
+            });
+
+            cargarSubopciones();
+        });
+    </script>
+</body>
+</html>

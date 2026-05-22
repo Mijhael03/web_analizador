@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Web</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="page">
+        <section class="login-shell">
+            <div class="login-hero">
+                <span class="brand-tag">Salesland</span>
+                <h1>Panel de gestión</h1>
+                <p>Acceso rápido para registrar y consultar asesores.</p>
+
+                <div class="hero-points">
+                    <span class="hero-chip">Registro simple</span>
+                    <span class="hero-chip">Filtro por campaña</span>
+                    <span class="hero-chip">Vista de empleados</span>
+                </div>
+            </div>
+
+            <section class="card login-card">
+                <div class="brand login-brand">
+                    <span class="brand-tag">Acceso seguro</span>
+                    <h2>Inicia sesión</h2>
+                    <p>Ingresa tus credenciales para continuar al dashboard.</p>
+                </div>
+
+                <form method="post" class="login-form">
+                    <label for="usuario">Usuario</label>
+                    <input type="text" id="usuario" name="usuario" placeholder="Escribe tu usuario">
+
+                    <label for="clave">Contraseña</label>
+                    <input type="password" id="clave" name="clave" placeholder="Escribe tu contraseña">
+
+                    {% if mensaje %}
+                    <div class="message {{ tipo_mensaje }}">{{ mensaje }}</div>
+                    {% endif %}
+
+                    <button type="submit" class="primary-btn">Ingresar</button>
+                </form>
+
+                <div class="credentials login-credentials">
+                    <span>Usuario de prueba: <strong>admin</strong></span>
+                    <span>Clave de prueba: <strong>1234</strong></span>
+                </div>
+            </section>
+        </section>
+    </main>
+</body>
+</html>

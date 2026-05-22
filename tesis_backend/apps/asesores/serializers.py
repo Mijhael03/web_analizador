@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Asesor, Campaign
+from .models import Asesor, Campaign, Registro
 
 class AsesorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,4 +9,9 @@ class AsesorSerializer(serializers.ModelSerializer):
 class CampaignSerializer(serializers.ModelSerializer):
     class Meta:
         model = Campaign
+        fields = '__all__'
+
+class RegistroSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Registro
         fields = '__all__'

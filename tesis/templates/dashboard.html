@@ -50,6 +50,18 @@
                         >
                             Empleados
                         </a>
+                        <a
+                            href="{{ url_for('bienvenida', vista='analisis') }}"
+                            class="nav-link {% if vista == 'analisis' %}active{% endif %}"
+                        >
+                            Análisis
+                        </a>
+                        <a
+                            href="{{ url_for('bienvenida', vista='resultados') }}"
+                            class="nav-link {% if vista == 'resultados' %}active{% endif %}"
+                        >
+                            Resultados
+                        </a>
                     </nav>
 
                     <div class="sidebar-footer">
@@ -138,6 +150,115 @@
                         <p>Todavía no hay empleados registrados. Ve a "Nuevo registro" para agregar uno.</p>
                     </div>
                     {% endif %}
+                    {% elif vista == 'resultados' %}
+                    <div class="section-head">
+                        <h2>Resultados de análisis</h2>
+                        <span>{{ resultados|length }} archivo{{ 's' if resultados|length != 1 }}</span>
+                    </div>
+                    {% if resultados %}
+                    <div class="record-list">
+                        {% for r in resultados %}
+                        <article class="record-card resultado-card">
+                            <div class="record-header">
+                                <div class="resultado-icono">
+                                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                        <polyline points="14 2 14 8 20 8"/>
+                                        <line x1="16" y1="13" x2="8" y2="13"/>
+                                        <line x1="16" y1="17" x2="8" y2="17"/>
+                                        <polyline points="10 9 9 9 8 9"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3>{{ r.nombre }}</h3>
+                                    <p>{{ r.fecha }} &middot; {{ r.tamano }}</p>
+                                </div>
+                            </div>
+                            <div class="resultado-actions">
+                                <a href="{{ url_for('descargar_resultado', filename=r.nombre) }}" class="report-btn" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;padding:0 22px;min-height:44px;font-size:0.9rem;">
+                                    Descargar
+                                </a>
+                            </div>
+                        </article>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <p>No hay resultados disponibles.</p>
+                    </div>
+                    {% endif %}
+                    {% elif vista == 'analisis' %}
+                    <div class="section-head">
+                        <h2>Análisis de estrés</h2>
+                        <span>Selecciona asesores y rango de fechas</span>
+                    </div>
+
+                    {% if registros %}
+                    <form method="get" class="filter-form">
+                        <input type="hidden" name="vista" value="analisis">
+                        <div class="filter-field">
+                            <label for="cliente_filtro_a">Cliente</label>
+                            <select id="cliente_filtro_a" name="cliente" data-suboptions='{{ campanas|tojson }}' data-target="campana_filtro_a">
+                                <option value="">Todos los clientes</option>
+                                {% for campana in campanas.keys() %}
+                                <option value="{{ campana }}" {% if cliente_filtro == campana %}selected{% endif %}>{{ campana }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="filter-field">
+                            <label for="campana_filtro_a">Campaña</label>
+                            <select id="campana_filtro_a" name="campania" data-selected="{{ campana_filtro }}" {% if not cliente_filtro %}disabled{% endif %}>
+                                <option value="">{% if cliente_filtro %}Todas las campañas{% else %}Primero selecciona un cliente{% endif %}</option>
+                            </select>
+                        </div>
+                        <div class="filter-actions">
+                            <button type="submit" class="filter-btn">Filtrar</button>
+                            <a href="{{ url_for('bienvenida', vista='analisis') }}" class="clear-filter-btn">Limpiar</a>
+                        </div>
+                    </form>
+
+                    <form method="post" class="analisis-form" id="analisisForm">
+                        <div class="analisis-list" id="analisisList">
+                            {% for r in registros %}
+                            <label class="analisis-item">
+                                <input type="checkbox" name="asesores" value="{{ r.id }}" class="analisis-check">
+                                <img class="record-avatar analisis-avatar" src="{{ r.foto_perfil }}" alt="">
+                                <div class="analisis-info">
+                                    <strong>{{ r.nombres }} {{ r.apellidos }}</strong>
+                                    <span>{{ r.campana }} &middot; {{ r.subcampana }}</span>
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+
+                        <div class="analisis-fechas">
+                            <div class="filter-field">
+                                <label for="fecha_inicio">Fecha inicio</label>
+                                 <input type="text" id="fecha_inicio" name="fecha_inicio" class="analisis-date-input" placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10">
+                            </div>
+                            <div class="filter-field">
+                                <label for="hora_inicio">Hora inicio</label>
+                                <input type="time" id="hora_inicio" name="hora_inicio" class="analisis-date-input">
+                            </div>
+                            <div class="filter-field">
+                                <label for="fecha_fin">Fecha fin</label>
+                                <input type="text" id="fecha_fin" name="fecha_fin" class="analisis-date-input" placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10">
+                            </div>
+                            <div class="filter-field">
+                                <label for="hora_fin">Hora fin</label>
+                                <input type="time" id="hora_fin" name="hora_fin" class="analisis-date-input">
+                            </div>
+                        </div>
+
+                        <div class="analisis-accion">
+                            <button type="submit" class="primary-btn analisis-btn">Iniciar análisis</button>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="empty-state">
+                        <p>No hay empleados registrados. Agrega algunos desde "Nuevo registro".</p>
+                    </div>
+                    {% endif %}
                     {% else %}
                     <div class="section-head">
                         <h2>Nuevo registro</h2>
@@ -160,10 +281,10 @@
                         <input type="text" id="apellidos" name="apellidos" placeholder="Escribe los apellidos">
 
                         <label for="fecha_nacimiento">Fecha de nacimiento</label>
-                        <input type="date" id="fecha_nacimiento" name="fecha_nacimiento">
+                        <input type="text" id="fecha_nacimiento" name="fecha_nacimiento" placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10">
 
                         <label for="fecha_ingreso">Fecha de ingreso</label>
-                        <input type="date" id="fecha_ingreso" name="fecha_ingreso">
+                        <input type="text" id="fecha_ingreso" name="fecha_ingreso" placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10">
 
                         <label for="campana">Cliente</label>
                         <select
@@ -261,6 +382,16 @@
             });
 
             cargarSubopciones();
+        });
+
+        document.querySelectorAll("input[maxlength='10']").forEach((input) => {
+            input.addEventListener("input", (e) => {
+                let val = e.target.value.replace(/[^0-9]/g, "");
+                if (val.length > 2) val = val.slice(0, 2) + "/" + val.slice(2);
+                if (val.length > 5) val = val.slice(0, 5) + "/" + val.slice(5);
+                if (val.length > 10) val = val.slice(0, 10);
+                e.target.value = val;
+            });
         });
     </script>
 </body>

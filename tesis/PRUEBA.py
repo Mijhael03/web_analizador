@@ -1,11 +1,12 @@
 try:
-    from flask import Flask, redirect, render_template, request, session, url_for
+    from flask import Flask, redirect, render_template, request, session, url_for, send_from_directory
 except ModuleNotFoundError as exc:
     raise SystemExit(
         "Falta instalar Flask. Ejecuta: pip install -r requirements.txt"
     ) from exc
 
 import base64
+import os
 from datetime import date, datetime
 import requests
 from werkzeug.utils import secure_filename
@@ -26,6 +27,34 @@ TIPOS_IMAGEN_PERMITIDOS = {
     "image/png": "png",
     "image/webp": "webp",
 }
+
+RESULTADOS_DIR = "/home/mijhael/Desktop/Tesis_cod/RESULTADOS"
+
+
+def listar_resultados():
+    archivos = []
+    try:
+        for f in sorted(os.listdir(RESULTADOS_DIR)):
+            if f.endswith(".xlsx"):
+                ruta = os.path.join(RESULTADOS_DIR, f)
+                stats = os.stat(ruta)
+                archivos.append({
+                    "nombre": f,
+                    "fecha": datetime.fromtimestamp(stats.st_mtime).strftime("%d/%m/%Y %H:%M"),
+                    "tamano": _formato_tamano(stats.st_size),
+                })
+    except Exception as e:
+        print(f"Error al listar resultados: {e}")
+    return archivos
+
+
+def _formato_tamano(bytes_):
+    if bytes_ < 1024:
+        return f"{bytes_} B"
+    elif bytes_ < 1024 ** 2:
+        return f"{bytes_ / 1024:.1f} KB"
+    else:
+        return f"{bytes_ / 1024 ** 2:.1f} MB"
 
 
 def calcular_antiguedad(fecha_ingreso):
@@ -65,6 +94,7 @@ def obtener_registros():
             ingreso = datetime.strptime(r['fecha_ingreso'], "%Y-%m-%d").date()
             nacimiento = datetime.strptime(r['fecha_nacimiento'], "%Y-%m-%d").date()
             registros.append({
+                'id': r['id'],
                 'nombres': r['nombres'],
                 'apellidos': r['apellidos'],
                 'fecha_nacimiento': nacimiento.strftime("%d/%m/%Y"),
@@ -182,6 +212,8 @@ def bienvenida():
     if cliente_filtro and campana_filtro not in CAMPANAS.get(cliente_filtro, []):
         campana_filtro = ""
 
+    resultados = listar_resultados()
+
     registros = obtener_registros()
 
     registros_filtrados = registros
@@ -201,6 +233,7 @@ def bienvenida():
         autenticado=True,
         registros=registros_filtrados,
         total_registros=registros_filtrados if vista == "empleados" else registros,
+        resultados=resultados,
         mensaje=mensaje,
         tipo_mensaje=tipo_mensaje,
         vista=vista,
@@ -208,6 +241,13 @@ def bienvenida():
         cliente_filtro=cliente_filtro,
         campana_filtro=campana_filtro,
     )
+
+
+@app.route("/descargar_resultado/<path:filename>")
+def descargar_resultado(filename):
+    if not session.get("usuario"):
+        return redirect(url_for("login"))
+    return send_from_directory(RESULTADOS_DIR, filename, as_attachment=True)
 
 
 @app.route("/logout")

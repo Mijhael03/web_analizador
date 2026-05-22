@@ -693,3 +693,129 @@ body {
         align-items: stretch;
     }
 }
+
+.resultado-card .record-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.resultado-icono {
+    width: 68px;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.1);
+    border: 3px solid rgba(16, 185, 129, 0.14);
+}
+
+.resultado-actions {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.analisis-form {
+    display: grid;
+    gap: 24px;
+}
+
+.analisis-list {
+    display: grid;
+    gap: 10px;
+    max-height: 420px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.analisis-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(75, 17, 184, 0.1);
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.analisis-item:hover {
+    border-color: rgba(75, 17, 184, 0.25);
+    box-shadow: 0 4px 12px rgba(46, 16, 108, 0.06);
+}
+
+.analisis-check {
+    width: 22px;
+    height: 22px;
+    accent-color: #4b11b8;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.analisis-avatar {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+}
+
+.analisis-info {
+    display: grid;
+    gap: 2px;
+}
+
+.analisis-info strong {
+    font-size: 0.95rem;
+    color: var(--text);
+}
+
+.analisis-info span {
+    font-size: 0.84rem;
+    color: var(--muted);
+}
+
+.analisis-fechas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.analisis-date-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.96);
+    color: var(--text);
+    font: inherit;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.analisis-date-input:focus {
+    border-color: rgba(15, 118, 110, 0.65);
+    box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.14);
+}
+
+.analisis-date-input::placeholder,
+.login-form input[placeholder="dd/mm/yyyy"]::placeholder {
+    color: #a0a8c0;
+    font-weight: 400;
+}
+
+.analisis-accion {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.analisis-btn {
+    min-width: 220px;
+}
+
+@media (max-width: 900px) {
+    .analisis-fechas {
+        grid-template-columns: 1fr;
+    }
+}

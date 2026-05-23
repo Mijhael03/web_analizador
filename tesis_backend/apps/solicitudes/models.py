@@ -5,7 +5,7 @@ from apps.user.models import Profile
 
 class Solicitud(models.Model):
     ESTADOS = [
-        ("espera", "Espera"),
+        ("en espera", "En espera"),
         ("en proceso", "En proceso"),
         ("completado", "Completado"),
     ]

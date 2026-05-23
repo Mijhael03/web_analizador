@@ -6,18 +6,27 @@ except ModuleNotFoundError as exc:
     ) from exc
 
 import base64
+import json
 import os
-from datetime import date, datetime
+import random
+import string
+import subprocess
+import sys
+from datetime import date, datetime, timedelta
 import requests
 from werkzeug.utils import secure_filename
 
 API_BASE = "http://127.0.0.1:8000"
+API_SOLICITUDES = f"{API_BASE}/api/solicitudes/solicitudes/"
+SCRIPT_ANALISIS = "/home/mijhael/Desktop/Tesis_cod/modelo-analisis-estres/etapa2_analisis_v2.py"
+VENV_PYTHON = os.path.join(
+    os.path.dirname(SCRIPT_ANALISIS), ".venv", "bin", "python"
+)
 
 app = Flask(__name__)
 app.secret_key = "clave-secreta-cambiar-en-produccion"
 
-USUARIO_VALIDO = "admin"
-CLAVE_VALIDA = "1234"
+API_LOGIN = "http://127.0.0.1:8000/api/users/profiles/login/"
 CAMPANAS = {
     "Scotiabank": ["Prestamos", "Tarjetas"],
     "Movistar": ["Portabilidad", "Movistar Total"],
@@ -29,6 +38,7 @@ TIPOS_IMAGEN_PERMITIDOS = {
 }
 
 RESULTADOS_DIR = "/home/mijhael/Desktop/Tesis_cod/RESULTADOS"
+SOLICITUDES_DIR = "/home/mijhael/Desktop/Tesis_cod/solicitudes"
 
 
 def listar_resultados():
@@ -110,6 +120,27 @@ def obtener_registros():
         return []
 
 
+def obtener_solicitudes():
+    try:
+        resp = requests.get(API_SOLICITUDES, timeout=5)
+        resp.raise_for_status()
+        data = resp.json()
+        solicitudes = []
+        for s in data:
+            solicitudes.append({
+                'codigo': s['codigo'],
+                'status': s['status'],
+                'fecha': s.get('fecha_solicitud', '')[:10] if s.get('fecha_solicitud') else '',
+                'resultado_excel': s.get('resultado_excel') or '',
+                'mensaje_error': s.get('mensaje_error') or '',
+            })
+        solicitudes.sort(key=lambda x: x['codigo'], reverse=True)
+        return solicitudes
+    except Exception as e:
+        print(f"Error al obtener solicitudes: {e}")
+        return []
+
+
 @app.route("/", methods=["GET", "POST"])
 def login():
     mensaje = ""
@@ -120,12 +151,23 @@ def login():
         if not usuario or not clave:
             mensaje = "Completa el usuario y la contraseña."
             tipo_mensaje = "error"
-        elif usuario == USUARIO_VALIDO and clave == CLAVE_VALIDA:
-            session["usuario"] = usuario
-            return redirect(url_for("bienvenida"))
         else:
-            mensaje = "Usuario o contraseña incorrectos."
-            tipo_mensaje = "error"
+            try:
+                resp = requests.post(API_LOGIN, json={
+                    "user_name": usuario,
+                    "password": clave,
+                }, timeout=5)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    session["usuario"] = usuario
+                    session["profile_id"] = data["id"]
+                    return redirect(url_for("bienvenida"))
+                else:
+                    mensaje = "Usuario o contraseña incorrectos."
+                    tipo_mensaje = "error"
+            except requests.exceptions.ConnectionError:
+                mensaje = "No se pudo conectar al servidor. ¿El backend está corriendo?"
+                tipo_mensaje = "error"
     return render_template("login.html", mensaje=mensaje, tipo_mensaje=tipo_mensaje)
 
 
@@ -142,70 +184,128 @@ def bienvenida():
         return redirect(url_for("login"))
 
     if request.method == "POST":
-        nombres = request.form.get("nombres", "").strip()
-        apellidos = request.form.get("apellidos", "").strip()
-        fecha_nacimiento = request.form.get("fecha_nacimiento", "").strip()
-        fecha_ingreso = request.form.get("fecha_ingreso", "").strip()
-        campana = request.form.get("campana", "").strip()
-        subcampana = request.form.get("subcampana", "").strip()
-        foto = request.files.get("foto_perfil")
+        asesores = request.form.getlist("asesores")
+        if asesores:
+            fecha_ini = request.form.get("fecha_inicio", "").strip()
+            hora_ini = request.form.get("hora_inicio", "").strip()
+            fecha_fin = request.form.get("fecha_fin", "").strip()
+            hora_fin = request.form.get("hora_fin", "").strip()
 
-        if not nombres or not apellidos or not fecha_nacimiento or not fecha_ingreso or not campana or not subcampana:
-            mensaje = "Completa todos los campos del registro."
-            tipo_mensaje = "error"
-        elif campana not in CAMPANAS or subcampana not in CAMPANAS[campana]:
-            mensaje = "Selecciona una campaña y una opción válidas."
-            tipo_mensaje = "error"
-        elif not foto or not foto.filename:
-            mensaje = "Selecciona una foto de perfil."
-            tipo_mensaje = "error"
-        elif foto.mimetype not in TIPOS_IMAGEN_PERMITIDOS:
-            mensaje = "La foto debe ser JPG, PNG o WEBP."
-            tipo_mensaje = "error"
-        else:
             try:
-                nacimiento = datetime.strptime(fecha_nacimiento, "%Y-%m-%d").date()
-                ingreso = datetime.strptime(fecha_ingreso, "%Y-%m-%d").date()
-                hoy = date.today()
-            except ValueError:
-                mensaje = "Ingresa fechas validas."
-                tipo_mensaje = "error"
-            else:
-                if nacimiento > hoy:
-                    mensaje = "La fecha de nacimiento no puede ser futura."
-                    tipo_mensaje = "error"
-                elif ingreso > hoy:
-                    mensaje = "La fecha de ingreso no puede ser futura."
+                inicio = datetime.strptime(f"{fecha_ini} {hora_ini}", "%d/%m/%Y %H:%M")
+                fin = datetime.strptime(f"{fecha_fin} {hora_fin}", "%d/%m/%Y %H:%M")
+                if fin <= inicio:
+                    mensaje = "La hora fin debe ser posterior a la hora inicio."
                     tipo_mensaje = "error"
                 else:
-                    data = {
-                        'nombres': nombres,
-                        'apellidos': apellidos,
-                        'fecha_nacimiento': fecha_nacimiento,
-                        'fecha_ingreso': fecha_ingreso,
-                        'cliente': campana,
-                        'campana': subcampana,
+                    diff_min = int((fin - inicio).total_seconds() / 60)
+                    params = {
+                        "minuto_inicio": 0,
+                        "minuto_fin": diff_min,
+                        "ids_empleados": [int(pid) for pid in asesores],
                     }
-                    files = {
-                        'foto_perfil': (secure_filename(foto.filename), foto.read(), foto.mimetype)
-                    }
-                    try:
-                        resp = requests.post(
-                            f"{API_BASE}/api/asesores/registros/",
-                            data=data,
-                            files=files,
-                            timeout=10
-                        )
-                        if resp.status_code == 201:
-                            mensaje = "Registro guardado correctamente."
-                            tipo_mensaje = "success"
-                            vista = "empleados"
-                        else:
-                            mensaje = f"Error al guardar en BD."
-                            tipo_mensaje = "error"
-                    except requests.exceptions.ConnectionError:
-                        mensaje = "No se pudo conectar al servidor de base de datos."
+
+                    codigo = "SALES" + "".join(random.choices(string.digits, k=5))
+
+                    profile_id = session.get("profile_id")
+                    if not profile_id:
+                        mensaje = "Debes iniciar sesión nuevamente."
                         tipo_mensaje = "error"
+                    else:
+                        solicitud_data = {
+                            "codigo": codigo,
+                            "status": "espera",
+                            "id_user": profile_id,
+                            "json_data": params,
+                        }
+                        resp = requests.post(API_SOLICITUDES, json=solicitud_data, timeout=5)
+                        if resp.status_code not in (201, 200):
+                            mensaje = f"Error al registrar solicitud en BD."
+                            tipo_mensaje = "error"
+                        else:
+                            os.makedirs(SOLICITUDES_DIR, exist_ok=True)
+                            ruta = os.path.join(SOLICITUDES_DIR, f"{codigo}.json")
+                            with open(ruta, "w") as f:
+                                json.dump(params, f, indent=4)
+                            subprocess.Popen(
+                                [VENV_PYTHON, SCRIPT_ANALISIS, ruta],
+                                stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL,
+                            )
+                            mensaje = f"Análisis iniciado: {codigo}, {params['ids_empleados']}, {diff_min} min"
+                            tipo_mensaje = "success"
+            except ValueError:
+                mensaje = "Formato de fecha/hora inválido. Usa dd/mm/yyyy y HH:MM."
+                tipo_mensaje = "error"
+            except Exception as e:
+                mensaje = f"Error al guardar solicitud: {e}"
+                tipo_mensaje = "error"
+
+        elif request.form.get("nombres", "").strip():
+            nombres = request.form.get("nombres", "").strip()
+            apellidos = request.form.get("apellidos", "").strip()
+            fecha_nacimiento = request.form.get("fecha_nacimiento", "").strip()
+            fecha_ingreso = request.form.get("fecha_ingreso", "").strip()
+            campana = request.form.get("campana", "").strip()
+            subcampana = request.form.get("subcampana", "").strip()
+            foto = request.files.get("foto_perfil")
+
+            if not nombres or not apellidos or not fecha_nacimiento or not fecha_ingreso or not campana or not subcampana:
+                mensaje = "Completa todos los campos del registro."
+                tipo_mensaje = "error"
+            elif campana not in CAMPANAS or subcampana not in CAMPANAS[campana]:
+                mensaje = "Selecciona una campaña y una opción válidas."
+                tipo_mensaje = "error"
+            elif not foto or not foto.filename:
+                mensaje = "Selecciona una foto de perfil."
+                tipo_mensaje = "error"
+            elif foto.mimetype not in TIPOS_IMAGEN_PERMITIDOS:
+                mensaje = "La foto debe ser JPG, PNG o WEBP."
+                tipo_mensaje = "error"
+            else:
+                try:
+                    nacimiento = datetime.strptime(fecha_nacimiento, "%Y-%m-%d").date()
+                    ingreso = datetime.strptime(fecha_ingreso, "%Y-%m-%d").date()
+                    hoy = date.today()
+                except ValueError:
+                    mensaje = "Ingresa fechas validas."
+                    tipo_mensaje = "error"
+                else:
+                    if nacimiento > hoy:
+                        mensaje = "La fecha de nacimiento no puede ser futura."
+                        tipo_mensaje = "error"
+                    elif ingreso > hoy:
+                        mensaje = "La fecha de ingreso no puede ser futura."
+                        tipo_mensaje = "error"
+                    else:
+                        data = {
+                            'nombres': nombres,
+                            'apellidos': apellidos,
+                            'fecha_nacimiento': fecha_nacimiento,
+                            'fecha_ingreso': fecha_ingreso,
+                            'cliente': campana,
+                            'campana': subcampana,
+                        }
+                        files = {
+                            'foto_perfil': (secure_filename(foto.filename), foto.read(), foto.mimetype)
+                        }
+                        try:
+                            resp = requests.post(
+                                f"{API_BASE}/api/asesores/registros/",
+                                data=data,
+                                files=files,
+                                timeout=10
+                            )
+                            if resp.status_code == 201:
+                                mensaje = "Registro guardado correctamente."
+                                tipo_mensaje = "success"
+                                vista = "empleados"
+                            else:
+                                mensaje = f"Error al guardar en BD."
+                                tipo_mensaje = "error"
+                        except requests.exceptions.ConnectionError:
+                            mensaje = "No se pudo conectar al servidor de base de datos."
+                            tipo_mensaje = "error"
 
     if cliente_filtro and cliente_filtro not in CAMPANAS:
         cliente_filtro = ""
@@ -227,6 +327,8 @@ def bienvenida():
                 r for r in registros_filtrados if r["subcampana"] == campana_filtro
             ]
 
+    solicitudes = obtener_solicitudes()
+
     return render_template(
         "dashboard.html",
         usuario=usuario,
@@ -234,6 +336,7 @@ def bienvenida():
         registros=registros_filtrados,
         total_registros=registros_filtrados if vista == "empleados" else registros,
         resultados=resultados,
+        solicitudes=solicitudes,
         mensaje=mensaje,
         tipo_mensaje=tipo_mensaje,
         vista=vista,

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,12 +10,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
     <main class="page">
         <section class="card">
             <div class="dashboard-header">
                 <div class="dashboard-topbar">
-                    <button type="button" class="menu-toggle" id="menuToggle" aria-expanded="false" aria-controls="dashboardMenu">
+                    <button type="button" class="menu-toggle" id="menuToggle" aria-expanded="false"
+                        aria-controls="dashboardMenu">
                         <span></span>
                         <span></span>
                         <span></span>
@@ -38,29 +41,25 @@
                     </div>
 
                     <nav class="sidebar-nav">
-                        <a
-                            href="{{ url_for('bienvenida', vista='nuevo-registro') }}"
-                            class="nav-link {% if vista == 'nuevo-registro' %}active{% endif %}"
-                        >
+                        <a href="{{ url_for('bienvenida', vista='nuevo-registro') }}"
+                            class="nav-link {% if vista == 'nuevo-registro' %}active{% endif %}">
                             Nuevo registro
                         </a>
-                        <a
-                            href="{{ url_for('bienvenida', vista='empleados') }}"
-                            class="nav-link {% if vista == 'empleados' %}active{% endif %}"
-                        >
+                        <a href="{{ url_for('bienvenida', vista='empleados') }}"
+                            class="nav-link {% if vista == 'empleados' %}active{% endif %}">
                             Empleados
                         </a>
-                        <a
-                            href="{{ url_for('bienvenida', vista='analisis') }}"
-                            class="nav-link {% if vista == 'analisis' %}active{% endif %}"
-                        >
+                        <a href="{{ url_for('bienvenida', vista='analisis') }}"
+                            class="nav-link {% if vista == 'analisis' %}active{% endif %}">
                             Análisis
                         </a>
-                        <a
-                            href="{{ url_for('bienvenida', vista='resultados') }}"
-                            class="nav-link {% if vista == 'resultados' %}active{% endif %}"
-                        >
+                        <a href="{{ url_for('bienvenida', vista='resultados') }}"
+                            class="nav-link {% if vista == 'resultados' %}active{% endif %}">
                             Resultados
+                        </a>
+                        <a href="{{ url_for('bienvenida', vista='seguimiento') }}"
+                            class="nav-link {% if vista == 'seguimiento' %}active{% endif %}">
+                            Seguimiento
                         </a>
                     </nav>
 
@@ -85,34 +84,29 @@
 
                         <div class="filter-field">
                             <label for="cliente_filtro">Cliente</label>
-                            <select
-                                id="cliente_filtro"
-                                name="cliente"
-                                data-suboptions='{{ campanas|tojson }}'
-                                data-target="campana_filtro"
-                            >
+                            <select id="cliente_filtro" name="cliente" data-suboptions='{{ campanas|tojson }}'
+                                data-target="campana_filtro">
                                 <option value="">Todos los clientes</option>
                                 {% for campana in campanas.keys() %}
-                                <option value="{{ campana }}" {% if cliente_filtro == campana %}selected{% endif %}>{{ campana }}</option>
+                                <option value="{{ campana }}" {% if cliente_filtro==campana %}selected{% endif %}>{{
+                                    campana }}</option>
                                 {% endfor %}
                             </select>
                         </div>
 
                         <div class="filter-field">
                             <label for="campana_filtro">Campaña</label>
-                            <select
-                                id="campana_filtro"
-                                name="campania"
-                                data-selected="{{ campana_filtro }}"
-                                {% if not cliente_filtro %}disabled{% endif %}
-                            >
-                                <option value="">{% if cliente_filtro %}Todas las campañas{% else %}Primero selecciona un cliente{% endif %}</option>
+                            <select id="campana_filtro" name="campania" data-selected="{{ campana_filtro }}" {% if not
+                                cliente_filtro %}disabled{% endif %}>
+                                <option value="">{% if cliente_filtro %}Todas las campañas{% else %}Primero selecciona
+                                    un cliente{% endif %}</option>
                             </select>
                         </div>
 
                         <div class="filter-actions">
                             <button type="submit" class="filter-btn">Filtrar</button>
-                            <a href="{{ url_for('bienvenida', vista='empleados') }}" class="clear-filter-btn">Limpiar</a>
+                            <a href="{{ url_for('bienvenida', vista='empleados') }}"
+                                class="clear-filter-btn">Limpiar</a>
                         </div>
                     </form>
 
@@ -125,11 +119,8 @@
                         {% for registro in registros %}
                         <article class="record-card">
                             <div class="record-header">
-                                <img
-                                    class="record-avatar"
-                                    src="{{ registro.foto_perfil }}"
-                                    alt="Foto de perfil de {{ registro.nombres }} {{ registro.apellidos }}"
-                                >
+                                <img class="record-avatar" src="{{ registro.foto_perfil }}"
+                                    alt="Foto de perfil de {{ registro.nombres }} {{ registro.apellidos }}">
                                 <div>
                                     <h3>{{ registro.nombres }} {{ registro.apellidos }}</h3>
                                     <p>Antigüedad en la empresa: {{ registro.antiguedad }}</p>
@@ -161,12 +152,13 @@
                         <article class="record-card resultado-card">
                             <div class="record-header">
                                 <div class="resultado-icono">
-                                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                        <polyline points="14 2 14 8 20 8"/>
-                                        <line x1="16" y1="13" x2="8" y2="13"/>
-                                        <line x1="16" y1="17" x2="8" y2="17"/>
-                                        <polyline points="10 9 9 9 8 9"/>
+                                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#10b981"
+                                        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                        <polyline points="14 2 14 8 20 8" />
+                                        <line x1="16" y1="13" x2="8" y2="13" />
+                                        <line x1="16" y1="17" x2="8" y2="17" />
+                                        <polyline points="10 9 9 9 8 9" />
                                     </svg>
                                 </div>
                                 <div>
@@ -175,7 +167,8 @@
                                 </div>
                             </div>
                             <div class="resultado-actions">
-                                <a href="{{ url_for('descargar_resultado', filename=r.nombre) }}" class="report-btn" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;padding:0 22px;min-height:44px;font-size:0.9rem;">
+                                <a href="{{ url_for('descargar_resultado', filename=r.nombre) }}" class="report-btn"
+                                    style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;padding:0 22px;min-height:44px;font-size:0.9rem;">
                                     Descargar
                                 </a>
                             </div>
@@ -185,6 +178,46 @@
                     {% else %}
                     <div class="empty-state">
                         <p>No hay resultados disponibles.</p>
+                    </div>
+                    {% endif %}
+                    {% elif vista == 'seguimiento' %}
+                    <div class="section-head">
+                        <h2>Seguimiento de análisis</h2>
+                        <span>{{ solicitudes|length }} solicitud{{ 'es' if solicitudes|length != 1 }}</span>
+                    </div>
+                    {% if solicitudes %}
+                    <div class="record-list">
+                        {% for s in solicitudes %}
+                        <article class="record-card solicitud-card">
+                            <div class="record-header">
+                                <div class="solicitud-icono">
+                                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
+                                        stroke="{{ '#f59e0b' if s.status == 'espera' else '#3b82f6' if s.status == 'en proceso' else '#10b981' if s.status == 'completado' else '#ef4444' }}"
+                                        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <polyline points="12 6 12 12 16 14" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3>{{ s.codigo }}</h3>
+                                    <p>
+                                        <span class="status-badge status-{{ s.status|replace(' ', '_') }}">{{ s.status }}</span>
+                                        &middot; {{ s.fecha }}
+                                    </p>
+                                    {% if s.resultado_excel %}
+                                    <small>Excel: {{ s.resultado_excel }}</small>
+                                    {% endif %}
+                                    {% if s.mensaje_error %}
+                                    <small class="error-text">{{ s.mensaje_error }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </article>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <p>No hay solicitudes de análisis.</p>
                     </div>
                     {% endif %}
                     {% elif vista == 'analisis' %}
@@ -198,17 +231,21 @@
                         <input type="hidden" name="vista" value="analisis">
                         <div class="filter-field">
                             <label for="cliente_filtro_a">Cliente</label>
-                            <select id="cliente_filtro_a" name="cliente" data-suboptions='{{ campanas|tojson }}' data-target="campana_filtro_a">
+                            <select id="cliente_filtro_a" name="cliente" data-suboptions='{{ campanas|tojson }}'
+                                data-target="campana_filtro_a">
                                 <option value="">Todos los clientes</option>
                                 {% for campana in campanas.keys() %}
-                                <option value="{{ campana }}" {% if cliente_filtro == campana %}selected{% endif %}>{{ campana }}</option>
+                                <option value="{{ campana }}" {% if cliente_filtro==campana %}selected{% endif %}>{{
+                                    campana }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="filter-field">
                             <label for="campana_filtro_a">Campaña</label>
-                            <select id="campana_filtro_a" name="campania" data-selected="{{ campana_filtro }}" {% if not cliente_filtro %}disabled{% endif %}>
-                                <option value="">{% if cliente_filtro %}Todas las campañas{% else %}Primero selecciona un cliente{% endif %}</option>
+                            <select id="campana_filtro_a" name="campania" data-selected="{{ campana_filtro }}" {% if not
+                                cliente_filtro %}disabled{% endif %}>
+                                <option value="">{% if cliente_filtro %}Todas las campañas{% else %}Primero selecciona
+                                    un cliente{% endif %}</option>
                             </select>
                         </div>
                         <div class="filter-actions">
@@ -216,6 +253,10 @@
                             <a href="{{ url_for('bienvenida', vista='analisis') }}" class="clear-filter-btn">Limpiar</a>
                         </div>
                     </form>
+
+                    {% if mensaje %}
+                    <div class="message {{ tipo_mensaje }}">{{ mensaje }}</div>
+                    {% endif %}
 
                     <form method="post" class="analisis-form" id="analisisForm">
                         <div class="analisis-list" id="analisisList">
@@ -234,7 +275,8 @@
                         <div class="analisis-fechas">
                             <div class="filter-field">
                                 <label for="fecha_inicio">Fecha inicio</label>
-                                 <input type="text" id="fecha_inicio" name="fecha_inicio" class="analisis-date-input" placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10">
+                                <input type="text" id="fecha_inicio" name="fecha_inicio" class="analisis-date-input"
+                                    placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10">
                             </div>
                             <div class="filter-field">
                                 <label for="hora_inicio">Hora inicio</label>
@@ -242,7 +284,8 @@
                             </div>
                             <div class="filter-field">
                                 <label for="fecha_fin">Fecha fin</label>
-                                <input type="text" id="fecha_fin" name="fecha_fin" class="analisis-date-input" placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10">
+                                <input type="text" id="fecha_fin" name="fecha_fin" class="analisis-date-input"
+                                    placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10">
                             </div>
                             <div class="filter-field">
                                 <label for="hora_fin">Hora fin</label>
@@ -270,7 +313,8 @@
 
                         <label for="foto_perfil">Foto de perfil</label>
                         <div class="upload-box">
-                            <input type="file" id="foto_perfil" name="foto_perfil" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+                            <input type="file" id="foto_perfil" name="foto_perfil"
+                                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
                             <small>Sube una imagen JPG, PNG o WEBP.</small>
                         </div>
 
@@ -281,18 +325,16 @@
                         <input type="text" id="apellidos" name="apellidos" placeholder="Escribe los apellidos">
 
                         <label for="fecha_nacimiento">Fecha de nacimiento</label>
-                        <input type="text" id="fecha_nacimiento" name="fecha_nacimiento" placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10">
+                        <input type="text" id="fecha_nacimiento" name="fecha_nacimiento" placeholder="dd/mm/yyyy"
+                            inputmode="numeric" maxlength="10">
 
                         <label for="fecha_ingreso">Fecha de ingreso</label>
-                        <input type="text" id="fecha_ingreso" name="fecha_ingreso" placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10">
+                        <input type="text" id="fecha_ingreso" name="fecha_ingreso" placeholder="dd/mm/yyyy"
+                            inputmode="numeric" maxlength="10">
 
                         <label for="campana">Cliente</label>
-                        <select
-                            id="campana"
-                            name="campana"
-                            data-suboptions='{{ campanas|tojson }}'
-                            data-target="subcampana"
-                        >
+                        <select id="campana" name="campana" data-suboptions='{{ campanas|tojson }}'
+                            data-target="subcampana">
                             <option value="">Selecciona un cliente</option>
                             {% for campana in campanas.keys() %}
                             <option value="{{ campana }}">{{ campana }}</option>
@@ -395,4 +437,5 @@
         });
     </script>
 </body>
+
 </html>

@@ -819,3 +819,26 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+.solicitud-card .record-header h3 {
+    font-size: 1.15rem;
+    letter-spacing: 0.02em;
+    color: var(--heading);
+    font-weight: 700;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 2px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.status-espera { background: #fef3c7; color: #92400e; }
+.status-en_proceso { background: #dbeafe; color: #1e40af; }
+.status-completado { background: #d1fae5; color: #065f46; }
+.status-error { background: #fee2e2; color: #991b1b; }
+
+.error-text { color: #ef4444; font-size: 0.8rem; }

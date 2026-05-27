@@ -23,8 +23,23 @@ class Campaign(models.Model):
 
 
 class Registro(models.Model):
+    GENEROS = [
+        ("masculino", "Masculino"),
+        ("femenino", "Femenino"),
+    ]
+    ESTADOS_CIVILES = [
+        ("soltero", "Soltero/a"),
+        ("casado", "Casado/a"),
+        ("conviviente", "Conviviente"),
+        ("divorciado", "Divorciado/a"),
+        ("viudo", "Viudo/a"),
+    ]
+
     nombres = models.CharField(max_length=100)
     apellidos = models.CharField(max_length=100)
+    edad = models.PositiveSmallIntegerField(blank=True, null=True)
+    genero = models.CharField(max_length=20, choices=GENEROS, blank=True, null=True)
+    estado_civil = models.CharField(max_length=20, choices=ESTADOS_CIVILES, blank=True, null=True)
     fecha_nacimiento = models.DateField()
     fecha_ingreso = models.DateField()
     cliente = models.CharField(max_length=100)

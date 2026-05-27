@@ -11,7 +11,7 @@ class Solicitud(models.Model):
     ]
 
     codigo = models.CharField(max_length=10)
-    status = models.CharField(max_length=10, choices=ESTADOS)
+    status = models.CharField(max_length=20, choices=ESTADOS)
     id_user = models.ForeignKey(Profile, on_delete=models.CASCADE, db_column='id_user')
     json_data = models.JSONField(null=True)
     resultado_excel = models.CharField(max_length=200, blank=True, null=True)

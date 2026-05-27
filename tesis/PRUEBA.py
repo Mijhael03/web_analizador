@@ -16,11 +16,15 @@ from datetime import date, datetime, timedelta
 import requests
 from werkzeug.utils import secure_filename
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 API_BASE = "http://127.0.0.1:8000"
 API_SOLICITUDES = f"{API_BASE}/api/solicitudes/solicitudes/"
-SCRIPT_ANALISIS = "/home/mijhael/Desktop/Tesis_cod/modelo-analisis-estres/etapa2_analisis_v2.py"
-VENV_PYTHON = os.path.join(
-    os.path.dirname(SCRIPT_ANALISIS), ".venv", "bin", "python"
+SCRIPT_ANALISIS = os.getenv("SCRIPT_ANALISIS", "")
+VENV_PYTHON = os.getenv(
+    "ANALISIS_PYTHON",
+    os.path.join(os.path.dirname(SCRIPT_ANALISIS), ".venv", "bin", "python")
+    if SCRIPT_ANALISIS
+    else "",
 )
 
 app = Flask(__name__)
@@ -37,8 +41,8 @@ TIPOS_IMAGEN_PERMITIDOS = {
     "image/webp": "webp",
 }
 
-RESULTADOS_DIR = "/home/mijhael/Desktop/Tesis_cod/RESULTADOS"
-SOLICITUDES_DIR = "/home/mijhael/Desktop/Tesis_cod/solicitudes"
+RESULTADOS_DIR = os.getenv("RESULTADOS_DIR", os.path.join(BASE_DIR, "RESULTADOS"))
+SOLICITUDES_DIR = os.getenv("SOLICITUDES_DIR", os.path.join(BASE_DIR, "solicitudes"))
 
 
 def listar_resultados():
@@ -107,6 +111,9 @@ def obtener_registros():
                 'id': r['id'],
                 'nombres': r['nombres'],
                 'apellidos': r['apellidos'],
+                'edad': r.get('edad') or '',
+                'genero': (r.get('genero') or '').capitalize(),
+                'estado_civil': (r.get('estado_civil') or '').replace('_', ' ').capitalize(),
                 'fecha_nacimiento': nacimiento.strftime("%d/%m/%Y"),
                 'fecha_ingreso': ingreso.strftime("%d/%m/%Y"),
                 'antiguedad': calcular_antiguedad(ingreso),
@@ -214,7 +221,7 @@ def bienvenida():
                     else:
                         solicitud_data = {
                             "codigo": codigo,
-                            "status": "espera",
+                            "status": "en espera",
                             "id_user": profile_id,
                             "json_data": params,
                         }
@@ -227,12 +234,15 @@ def bienvenida():
                             ruta = os.path.join(SOLICITUDES_DIR, f"{codigo}.json")
                             with open(ruta, "w") as f:
                                 json.dump(params, f, indent=4)
-                            subprocess.Popen(
-                                [VENV_PYTHON, SCRIPT_ANALISIS, ruta],
-                                stdout=subprocess.DEVNULL,
-                                stderr=subprocess.DEVNULL,
-                            )
-                            mensaje = f"Análisis iniciado: {codigo}, {params['ids_empleados']}, {diff_min} min"
+                            if os.path.exists(VENV_PYTHON) and os.path.exists(SCRIPT_ANALISIS):
+                                subprocess.Popen(
+                                    [VENV_PYTHON, SCRIPT_ANALISIS, ruta],
+                                    stdout=subprocess.DEVNULL,
+                                    stderr=subprocess.DEVNULL,
+                                )
+                                mensaje = f"Análisis iniciado: {codigo}, {params['ids_empleados']}, {diff_min} min"
+                            else:
+                                mensaje = f"Solicitud registrada: {codigo}. Configura SCRIPT_ANALISIS para ejecutar el análisis."
                             tipo_mensaje = "success"
             except ValueError:
                 mensaje = "Formato de fecha/hora inválido. Usa dd/mm/yyyy y HH:MM."
@@ -244,14 +254,29 @@ def bienvenida():
         elif request.form.get("nombres", "").strip():
             nombres = request.form.get("nombres", "").strip()
             apellidos = request.form.get("apellidos", "").strip()
+            edad = request.form.get("edad", "").strip()
+            genero = request.form.get("genero", "").strip()
+            estado_civil = request.form.get("estado_civil", "").strip()
             fecha_nacimiento = request.form.get("fecha_nacimiento", "").strip()
             fecha_ingreso = request.form.get("fecha_ingreso", "").strip()
             campana = request.form.get("campana", "").strip()
             subcampana = request.form.get("subcampana", "").strip()
             foto = request.files.get("foto_perfil")
 
-            if not nombres or not apellidos or not fecha_nacimiento or not fecha_ingreso or not campana or not subcampana:
+            generos_validos = {"masculino", "femenino"}
+            estados_civiles_validos = {"soltero", "casado", "conviviente", "divorciado", "viudo"}
+
+            if not nombres or not apellidos or not edad or not genero or not estado_civil or not fecha_nacimiento or not fecha_ingreso or not campana or not subcampana:
                 mensaje = "Completa todos los campos del registro."
+                tipo_mensaje = "error"
+            elif not edad.isdigit() or not 18 <= int(edad) <= 100:
+                mensaje = "Ingresa una edad valida entre 18 y 100."
+                tipo_mensaje = "error"
+            elif genero not in generos_validos:
+                mensaje = "Selecciona un genero valido."
+                tipo_mensaje = "error"
+            elif estado_civil not in estados_civiles_validos:
+                mensaje = "Selecciona un estado civil valido."
                 tipo_mensaje = "error"
             elif campana not in CAMPANAS or subcampana not in CAMPANAS[campana]:
                 mensaje = "Selecciona una campaña y una opción válidas."
@@ -264,8 +289,8 @@ def bienvenida():
                 tipo_mensaje = "error"
             else:
                 try:
-                    nacimiento = datetime.strptime(fecha_nacimiento, "%Y-%m-%d").date()
-                    ingreso = datetime.strptime(fecha_ingreso, "%Y-%m-%d").date()
+                    nacimiento = datetime.strptime(fecha_nacimiento, "%d/%m/%Y").date()
+                    ingreso = datetime.strptime(fecha_ingreso, "%d/%m/%Y").date()
                     hoy = date.today()
                 except ValueError:
                     mensaje = "Ingresa fechas validas."
@@ -281,8 +306,11 @@ def bienvenida():
                         data = {
                             'nombres': nombres,
                             'apellidos': apellidos,
-                            'fecha_nacimiento': fecha_nacimiento,
-                            'fecha_ingreso': fecha_ingreso,
+                            'edad': int(edad),
+                            'genero': genero,
+                            'estado_civil': estado_civil,
+                            'fecha_nacimiento': nacimiento.isoformat(),
+                            'fecha_ingreso': ingreso.isoformat(),
                             'cliente': campana,
                             'campana': subcampana,
                         }
@@ -360,4 +388,4 @@ def logout():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=int(os.getenv("FRONTEND_PORT", "5001")))

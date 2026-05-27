@@ -125,3 +125,8 @@ cython_debug/
 local_settings.py
 db.sqlite3
 media
+
+# Local generated files
+.DS_Store
+/RESULTADOS/
+/solicitudes/

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Analisis de Estres</title>
+</head>
+
+<body>
+    <header class="report-header">
+        <div>
+            <span class="brand">SALESLAND</span>
+            <h1>Reporte de Analisis de Estres</h1>
+            <p class="subtitle">Resultado consolidado por asesor y periodo evaluado.</p>
+        </div>
+        <div class="report-code">
+            <span>Codigo</span>
+            <strong>{{ codigo }}</strong>
+        </div>
+    </header>
+
+    <section class="summary-grid">
+        <article>
+            <span>Fecha de reporte</span>
+            <strong>{{ fecha_reporte }}</strong>
+        </article>
+        <article>
+            <span>Cliente</span>
+            <strong>{{ cliente }}</strong>
+        </article>
+        <article>
+            <span>Campana</span>
+            <strong>{{ campana }}</strong>
+        </article>
+        <article>
+            <span>Periodo analizado</span>
+            <strong>{{ periodo }}</strong>
+        </article>
+    </section>
+
+    <section class="block">
+        <h2>Resumen ejecutivo</h2>
+        <p>{{ resumen }}</p>
+    </section>
+
+    <section class="block">
+        <div class="section-title">
+            <h2>Resultados por asesor</h2>
+            <span>{{ resultados|length }} registro{{ '' if resultados|length == 1 else 's' }}</span>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Asesor</th>
+                    <th>Nivel</th>
+                    <th>Puntaje</th>
+                    <th>Estado</th>
+                    <th>Observacion</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in resultados %}
+                <tr>
+                    <td>{{ item.asesor }}</td>
+                    <td>
+                        <span class="badge badge-{{ item.nivel_clase }}">{{ item.nivel }}</span>
+                    </td>
+                    <td>{{ item.puntaje }}</td>
+                    <td>{{ item.estado }}</td>
+                    <td>{{ item.observacion }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="block two-columns">
+        <article>
+            <h2>Conclusiones</h2>
+            <ul>
+                {% for item in conclusiones %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </article>
+        <article>
+            <h2>Recomendaciones</h2>
+            <ul>
+                {% for item in recomendaciones %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </article>
+    </section>
+
+    <footer>
+        <span>Reporte generado automaticamente por el sistema de analisis.</span>
+        <span>Pagina <span class="page-number"></span></span>
+    </footer>
+</body>
+
+</html>

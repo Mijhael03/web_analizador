@@ -1,0 +1,2 @@
+-r tesis/requirements.txt
+-r tesis_backend/requirements.txt

@@ -1,3 +1,4 @@
+from datetime import date
 from django.db import models
 
 class Asesor(models.Model):
@@ -46,6 +47,19 @@ class Registro(models.Model):
     campana = models.CharField(max_length=100)
     foto_perfil = models.ImageField(upload_to='fotos/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def calcular_edad(self):
+        if not self.fecha_nacimiento:
+            return None
+        hoy = date.today()
+        edad = hoy.year - self.fecha_nacimiento.year
+        if (hoy.month, hoy.day) < (self.fecha_nacimiento.month, self.fecha_nacimiento.day):
+            edad -= 1
+        return edad
+
+    def save(self, *args, **kwargs):
+        self.edad = self.calcular_edad()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.nombres} {self.apellidos}"

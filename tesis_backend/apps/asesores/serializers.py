@@ -15,3 +15,4 @@ class RegistroSerializer(serializers.ModelSerializer):
     class Meta:
         model = Registro
         fields = '__all__'
+        read_only_fields = ['edad']

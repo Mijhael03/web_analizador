@@ -205,7 +205,7 @@ def listar_resultados():
     archivos = []
     try:
         for f in os.listdir(RESULTADOS_DIR):
-            if f.endswith((".xlsx", ".pdf")):
+            if f.endswith(".pdf"):
                 ruta = os.path.join(RESULTADOS_DIR, f)
                 stats = os.stat(ruta)
                 archivos.append({

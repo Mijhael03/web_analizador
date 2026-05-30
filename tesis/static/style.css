@@ -805,6 +805,30 @@ body {
     font-weight: 400;
 }
 
+.analisis-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+}
+
+.analisis-select-btn {
+    padding: 6px 16px;
+    border: 2px solid rgba(75, 17, 184, 0.25);
+    border-radius: 14px;
+    background: transparent;
+    color: #4b11b8;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.analisis-select-btn:hover {
+    background: rgba(75, 17, 184, 0.08);
+    border-color: #4b11b8;
+}
+
 .analisis-accion {
     display: flex;
     justify-content: flex-end;
@@ -843,3 +867,108 @@ body {
 .status-error { background: #fee2e2; color: #991b1b; }
 
 .error-text { color: #ef4444; font-size: 0.8rem; }
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-card {
+    background: white;
+    border-radius: 28px;
+    padding: 40px 36px 32px;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
+}
+
+.modal-card .modal-icon {
+    margin-bottom: 16px;
+}
+
+.modal-card h2 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #1d2340;
+    margin: 0 0 8px;
+}
+
+.modal-card .modal-user {
+    font-size: 1rem;
+    color: #4b11b8;
+    margin: 0 0 4px;
+}
+
+.modal-card .modal-note {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin: 8px 0 22px;
+}
+
+.modal-card .modal-close-btn {
+    width: auto;
+    min-width: 140px;
+    padding: 12px 28px;
+    margin: 0;
+    display: inline-flex;
+}
+
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 18px;
+    margin-top: 12px;
+}
+
+.menu-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 28px 18px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(239, 240, 255, 0.94));
+    border: 1px solid rgba(75, 17, 184, 0.1);
+    box-shadow: 0 16px 32px rgba(46, 16, 108, 0.08);
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+}
+
+.menu-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(75, 17, 184, 0.15);
+    border-color: rgba(75, 17, 184, 0.25);
+}
+
+.menu-card .menu-icon {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #4b11b8, #2d0b92);
+    color: white;
+    margin-bottom: 14px;
+}
+
+.menu-card h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--heading, #1d2340);
+    margin: 0 0 4px;
+}
+
+.menu-card p {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin: 0;
+}

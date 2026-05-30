@@ -41,6 +41,10 @@
                     </div>
 
                     <nav class="sidebar-nav">
+                        <a href="{{ url_for('bienvenida', vista='menu') }}"
+                            class="nav-link {% if vista == 'menu' %}active{% endif %}">
+                            Inicio
+                        </a>
                         <a href="{{ url_for('bienvenida', vista='nuevo-registro') }}"
                             class="nav-link {% if vista == 'nuevo-registro' %}active{% endif %}">
                             Nuevo registro
@@ -73,7 +77,59 @@
                 </aside>
 
                 <section class="dashboard-panel content-panel">
-                    {% if vista == 'empleados' %}
+                    {% if vista == 'menu' or not vista %}
+                    <div class="section-head">
+                        <h2>Bienvenido, {{ usuario }}</h2>
+                        <span>Panel principal</span>
+                    </div>
+                    <div class="menu-grid">
+                        <a href="{{ url_for('bienvenida', vista='nuevo-registro') }}" class="menu-card">
+                            <div class="menu-icon">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>
+                                </svg>
+                            </div>
+                            <h3>Nuevo registro</h3>
+                            <p>Agregar un nuevo empleado al sistema</p>
+                        </a>
+                        <a href="{{ url_for('bienvenida', vista='empleados') }}" class="menu-card">
+                            <div class="menu-icon">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                </svg>
+                            </div>
+                            <h3>Empleados</h3>
+                            <p>Ver y filtrar empleados registrados</p>
+                        </a>
+                        <a href="{{ url_for('bienvenida', vista='analisis') }}" class="menu-card">
+                            <div class="menu-icon">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                                </svg>
+                            </div>
+                            <h3>Análisis</h3>
+                            <p>Iniciar análisis de estrés por video</p>
+                        </a>
+                        <a href="{{ url_for('bienvenida', vista='resultados') }}" class="menu-card">
+                            <div class="menu-icon">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                                </svg>
+                            </div>
+                            <h3>Resultados</h3>
+                            <p>Descargar reportes y análisis generados</p>
+                        </a>
+                        <a href="{{ url_for('bienvenida', vista='seguimiento') }}" class="menu-card">
+                            <div class="menu-icon">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                            </div>
+                            <h3>Seguimiento</h3>
+                            <p>Estado de las solicitudes de análisis</p>
+                        </a>
+                    </div>
+                    {% elif vista == 'empleados' %}
                     <div class="section-head">
                         <h2>Empleados registrados</h2>
                         <span>{{ registros|length }} total</span>
@@ -208,7 +264,7 @@
                                         &middot; {{ s.fecha }}
                                     </p>
                                     {% if s.resultado_excel %}
-                                    <small>Excel: {{ s.resultado_excel }}</small>
+                                    <small>PDF: {{ s.resultado_excel }}</small>
                                     {% endif %}
                                     {% if s.mensaje_error %}
                                     <small class="error-text">{{ s.mensaje_error }}</small>
@@ -257,11 +313,29 @@
                         </div>
                     </form>
 
-                    {% if mensaje %}
+                    {% if mensaje and mensaje.startswith('popup:') %}
+                    {% set parts = mensaje.split('|') %}
+                    <div class="modal-overlay" id="successModal">
+                        <div class="modal-card">
+                            <div class="modal-icon">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                                </svg>
+                            </div>
+                            <h2>{{ parts[1] }}</h2>
+                            <p class="modal-user"><strong>{{ parts[2] }}</strong> &middot; {{ parts[3] }}</p>
+                            <p class="modal-note">{{ parts[4] }}</p>
+                            <button type="button" class="primary-btn modal-close-btn" onclick="document.getElementById('successModal').remove()">Entendido</button>
+                        </div>
+                    </div>
+                    {% elif mensaje %}
                     <div class="message {{ tipo_mensaje }}">{{ mensaje }}</div>
                     {% endif %}
 
                     <form method="post" class="analisis-form" id="analisisForm">
+                        <div class="analisis-toolbar">
+                            <button type="button" id="selectAllBtn" class="analisis-select-btn">Seleccionar todo</button>
+                        </div>
                         <div class="analisis-list" id="analisisList">
                             {% for r in registros %}
                             <label class="analisis-item">
@@ -326,9 +400,6 @@
 
                         <label for="apellidos">Apellidos</label>
                         <input type="text" id="apellidos" name="apellidos" placeholder="Escribe los apellidos">
-
-                        <label for="edad">Edad</label>
-                        <input type="number" id="edad" name="edad" placeholder="Ejemplo: 28" min="18" max="100">
 
                         <label for="genero">Género</label>
                         <select id="genero" name="genero">
@@ -448,6 +519,16 @@
 
             cargarSubopciones();
         });
+
+        const selectAllBtn = document.getElementById("selectAllBtn");
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener("click", () => {
+                const checkboxes = document.querySelectorAll("#analisisList .analisis-check");
+                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                checkboxes.forEach(cb => cb.checked = !allChecked);
+                selectAllBtn.textContent = allChecked ? "Seleccionar todo" : "Deseleccionar todo";
+            });
+        }
 
         document.querySelectorAll("input[maxlength='10']").forEach((input) => {
             input.addEventListener("input", (e) => {

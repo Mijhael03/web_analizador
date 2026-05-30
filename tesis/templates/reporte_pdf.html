@@ -53,10 +53,11 @@
             <thead>
                 <tr>
                     <th>Asesor</th>
-                    <th>Nivel</th>
-                    <th>Puntaje</th>
-                    <th>Estado</th>
-                    <th>Observacion</th>
+                    <th>Estrés</th>
+                    <th>Género</th>
+                    <th>Edad</th>
+                    <th>Estado civil</th>
+                    <th>Antigüedad</th>
                 </tr>
             </thead>
             <tbody>
@@ -64,11 +65,12 @@
                 <tr>
                     <td>{{ item.asesor }}</td>
                     <td>
-                        <span class="badge badge-{{ item.nivel_clase }}">{{ item.nivel }}</span>
+                        <span class="badge badge-{{ item.estres_clase }}">{{ item.estres }}</span>
                     </td>
-                    <td>{{ item.puntaje }}</td>
-                    <td>{{ item.estado }}</td>
-                    <td>{{ item.observacion }}</td>
+                    <td>{{ item.genero }}</td>
+                    <td>{{ item.edad }}</td>
+                    <td>{{ item.estado_civil }}</td>
+                    <td>{{ item.antiguedad }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

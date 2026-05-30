@@ -12,6 +12,10 @@ import random
 import string
 import subprocess
 import sys
+from zoneinfo import ZoneInfo
+from dotenv import load_dotenv
+
+load_dotenv()
 from datetime import date, datetime, timedelta
 import requests
 from werkzeug.utils import secure_filename
@@ -45,21 +49,189 @@ RESULTADOS_DIR = os.getenv("RESULTADOS_DIR", os.path.join(BASE_DIR, "RESULTADOS"
 SOLICITUDES_DIR = os.getenv("SOLICITUDES_DIR", os.path.join(BASE_DIR, "solicitudes"))
 
 
+def _get_user_name(codigo):
+    try:
+        resp = requests.get(API_SOLICITUDES, timeout=5)
+        resp.raise_for_status()
+        for s in resp.json():
+            if s['codigo'] == codigo:
+                return s.get('user_name') or codigo
+    except Exception as e:
+        print(f"Error obteniendo usuario: {e}")
+    return codigo
+
+
+def _get_ids_from_solicitud(codigo):
+    try:
+        resp = requests.get(API_SOLICITUDES, timeout=5)
+        resp.raise_for_status()
+        for s in resp.json():
+            if s['codigo'] == codigo:
+                jd = s.get('json_data')
+                if jd:
+                    return jd.get('ids_empleados')
+    except Exception as e:
+        print(f"Error obteniendo ids: {e}")
+    return None
+
+
+def generar_pdf_desde_excel(excel_path, codigo):
+    import pandas as pd
+    from generar_reporte_pdf import generar_reporte_pdf
+
+    df = pd.read_excel(excel_path, sheet_name="Resultados")
+
+    registros = obtener_registros()
+    reg_by_id = {reg['id']: reg for reg in registros}
+
+    ids_solicitados = _get_ids_from_solicitud(codigo)
+
+    if df.empty and not ids_solicitados:
+        return None
+
+    cliente = ""
+    campana = ""
+    if not df.empty:
+        cliente = df['cliente'].iloc[0] if 'cliente' in df.columns else ""
+        campana = df['campana'].iloc[0] if 'campana' in df.columns else ""
+
+    excel_by_name = {}
+    for _, r in df.iterrows():
+        key = f"{r['nombres']} {r['apellidos']}".lower()
+        excel_by_name[key] = r
+
+    resultados_pdf = []
+
+    if ids_solicitados:
+        for pid in ids_solicitados:
+            reg = reg_by_id.get(pid)
+            if reg:
+                nombre_completo = f"{reg['nombres']} {reg['apellidos']}"
+                key = nombre_completo.lower()
+                if key in excel_by_name:
+                    r = excel_by_name[key]
+                    pct = r['%_estres']
+                else:
+                    pct = 0
+
+                genero = reg.get('genero', '')
+                estado_civil = reg.get('estado_civil', '')
+                antiguedad = reg.get('antiguedad', '')
+                edad = reg.get('edad', '')
+
+                if pct < 30:
+                    estres_texto = "No presenta"
+                    estres_clase = "bajo"
+                else:
+                    estres_texto = "Si presenta"
+                    estres_clase = "alto"
+
+                resultados_pdf.append({
+                    "asesor": nombre_completo,
+                    "estres": estres_texto,
+                    "estres_clase": estres_clase,
+                    "genero": genero,
+                    "edad": edad,
+                    "estado_civil": estado_civil,
+                    "antiguedad": antiguedad,
+                })
+    else:
+        for _, r in df.iterrows():
+            pct = r['%_estres']
+            nombre_completo = f"{r['nombres']} {r['apellidos']}"
+            reg = reg_by_id.get(r['id']) if 'id' in r.index else None
+            if reg:
+                genero = reg.get('genero', '')
+                estado_civil = reg.get('estado_civil', '')
+                antiguedad = reg.get('antiguedad', '')
+                edad = reg.get('edad', '')
+            else:
+                genero = estado_civil = antiguedad = edad = ""
+
+            if pct < 30:
+                estres_texto = "No presenta"
+                estres_clase = "bajo"
+            else:
+                estres_texto = "Si presenta"
+                estres_clase = "alto"
+
+            resultados_pdf.append({
+                "asesor": nombre_completo,
+                "estres": estres_texto,
+                "estres_clase": estres_clase,
+                "genero": genero,
+                "edad": edad,
+                "estado_civil": estado_civil,
+                "antiguedad": antiguedad,
+            })
+
+    user_name = _get_user_name(codigo)
+    pdf_name = f"{user_name.replace(' ', '_')}_{codigo}.pdf"
+    pdf_path = os.path.join(RESULTADOS_DIR, pdf_name)
+
+    datos = {
+        "codigo": codigo,
+        "fecha_reporte": date.today().strftime("%d/%m/%Y"),
+        "cliente": cliente,
+        "campana": campana,
+        "periodo": "",
+        "resumen": (
+            f"El analisis identifica los niveles de estres estimados para "
+            f"{len(resultados_pdf)} asesores durante el periodo evaluado."
+        ),
+        "resultados": resultados_pdf,
+        "conclusiones": [
+            f"Se analizaron {len(resultados_pdf)} asesores.",
+            "Los casos que presentan estres requieren seguimiento individual.",
+        ],
+        "recomendaciones": [
+            "Programar pausas activas durante la jornada.",
+            "Realizar seguimiento a asesores con indicadores elevados.",
+            "Comparar resultados con evaluaciones posteriores.",
+        ],
+    }
+
+    try:
+        generar_reporte_pdf(datos, pdf_path)
+        print(f"PDF generado: {pdf_path}")
+        return pdf_name
+    except Exception as e:
+        print(f"Error generando PDF: {e}")
+        return None
+
+
 def listar_resultados():
+    generar_pdfs_pendientes()
     archivos = []
     try:
-        for f in sorted(os.listdir(RESULTADOS_DIR)):
-            if f.endswith(".xlsx"):
+        for f in os.listdir(RESULTADOS_DIR):
+            if f.endswith((".xlsx", ".pdf")):
                 ruta = os.path.join(RESULTADOS_DIR, f)
                 stats = os.stat(ruta)
                 archivos.append({
                     "nombre": f,
                     "fecha": datetime.fromtimestamp(stats.st_mtime).strftime("%d/%m/%Y %H:%M"),
                     "tamano": _formato_tamano(stats.st_size),
+                    "mtime": stats.st_mtime,
                 })
+        archivos.sort(key=lambda x: x["mtime"], reverse=True)
     except Exception as e:
         print(f"Error al listar resultados: {e}")
     return archivos
+
+
+def generar_pdfs_pendientes():
+    try:
+        archivos = os.listdir(RESULTADOS_DIR)
+        excels = [f for f in archivos if f.endswith(".xlsx")]
+        pdfs = {f for f in archivos if f.endswith(".pdf")}
+        for xlsx in excels:
+            codigo = os.path.splitext(xlsx)[0]
+            if not any(codigo in pdf for pdf in pdfs):
+                ruta = os.path.join(RESULTADOS_DIR, xlsx)
+                generar_pdf_desde_excel(ruta, codigo)
+    except Exception as e:
+        print(f"Error generando PDFs pendientes: {e}")
 
 
 def _formato_tamano(bytes_):
@@ -134,12 +306,22 @@ def obtener_solicitudes():
         data = resp.json()
         solicitudes = []
         for s in data:
+            created = s.get('created_at', '')
+            fecha_mostrar = ""
+            if created:
+                try:
+                    dt = datetime.fromisoformat(created.replace('Z', '+00:00'))
+                    dt = dt.replace(tzinfo=ZoneInfo("UTC")).astimezone(ZoneInfo("America/Lima"))
+                    fecha_mostrar = dt.strftime("%d/%m/%Y %H:%M")
+                except ValueError:
+                    fecha_mostrar = created[:16]
             solicitudes.append({
                 'codigo': s['codigo'],
                 'status': s['status'],
-                'fecha': s.get('fecha_solicitud', '')[:10] if s.get('fecha_solicitud') else '',
+                'fecha': fecha_mostrar,
                 'resultado_excel': s.get('resultado_excel') or '',
                 'mensaje_error': s.get('mensaje_error') or '',
+                'user_name': s.get('user_name') or '',
             })
         solicitudes.sort(key=lambda x: x['codigo'], reverse=True)
         return solicitudes
@@ -183,7 +365,7 @@ def bienvenida():
     usuario = session.get("usuario")
     mensaje = ""
     tipo_mensaje = ""
-    vista = request.args.get("vista", "nuevo-registro")
+    vista = request.args.get("vista", "menu")
     cliente_filtro = request.args.get("cliente", "").strip()
     campana_filtro = request.args.get("campania", "").strip()
 
@@ -240,7 +422,8 @@ def bienvenida():
                                     stdout=subprocess.DEVNULL,
                                     stderr=subprocess.DEVNULL,
                                 )
-                                mensaje = f"Análisis iniciado: {codigo}, {params['ids_empleados']}, {diff_min} min"
+                                user = session.get("usuario", "")
+                                mensaje = f"popup:Análisis iniciado|{user}|{codigo}|Tu código de archivo es {codigo}. Para ver en qué etapa está, dirígete al menú de SEGUIMIENTO."
                             else:
                                 mensaje = f"Solicitud registrada: {codigo}. Configura SCRIPT_ANALISIS para ejecutar el análisis."
                             tipo_mensaje = "success"
@@ -254,7 +437,6 @@ def bienvenida():
         elif request.form.get("nombres", "").strip():
             nombres = request.form.get("nombres", "").strip()
             apellidos = request.form.get("apellidos", "").strip()
-            edad = request.form.get("edad", "").strip()
             genero = request.form.get("genero", "").strip()
             estado_civil = request.form.get("estado_civil", "").strip()
             fecha_nacimiento = request.form.get("fecha_nacimiento", "").strip()
@@ -266,11 +448,8 @@ def bienvenida():
             generos_validos = {"masculino", "femenino"}
             estados_civiles_validos = {"soltero", "casado", "conviviente", "divorciado", "viudo"}
 
-            if not nombres or not apellidos or not edad or not genero or not estado_civil or not fecha_nacimiento or not fecha_ingreso or not campana or not subcampana:
+            if not nombres or not apellidos or not genero or not estado_civil or not fecha_nacimiento or not fecha_ingreso or not campana or not subcampana:
                 mensaje = "Completa todos los campos del registro."
-                tipo_mensaje = "error"
-            elif not edad.isdigit() or not 18 <= int(edad) <= 100:
-                mensaje = "Ingresa una edad valida entre 18 y 100."
                 tipo_mensaje = "error"
             elif genero not in generos_validos:
                 mensaje = "Selecciona un genero valido."
@@ -306,7 +485,6 @@ def bienvenida():
                         data = {
                             'nombres': nombres,
                             'apellidos': apellidos,
-                            'edad': int(edad),
                             'genero': genero,
                             'estado_civil': estado_civil,
                             'fecha_nacimiento': nacimiento.isoformat(),
